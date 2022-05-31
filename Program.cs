@@ -1,4 +1,4 @@
-﻿
+
 using System;
 using System.Collections;
 using System.Linq;
@@ -37,7 +37,7 @@ namespace MainRogue
 
         public void MapData()
         {
-            string layer0 = "%%%%%%%%%%%%%%#_##%%%%%%%%%%%%##########%  " + name + "'s Lives:#####                        ";
+            string layer0 = "%%%%%%%%%%%%%%#_##%%%%%%%%%%%%##########%  " + name + "'s Lives:<3<3<3                        ";
             string layer1 = "%%          %%# ##############   {+}   #%  Coins:000000                         ";
             string layer2 = "%%%%%%%%%%% %%#             |          #%  |---------------------------------|  ";
             string layer3 = "%#########% %############## ###        #%  | Info| Messages| Inventory| Notes|  ";
@@ -54,6 +54,11 @@ namespace MainRogue
             string layer14 = "%            %#   @     ##             #%  |                                 |  ";
             string layer15 = "%            %###########%##############%  |                                 |  ";
             string layer16 = "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%  |_________________________________|  ";
+            string layer17 = "-Talk -----------------------------------------------------------------------| ";
+            string layer18 = "|                                                                            |  ";
+            string layer19 = "|                                                                            |  ";
+            string layer20 = "|____________________________________________________________________________|  ";
+
 
 
             mapLayers.Add(layer0.ToCharArray());
@@ -73,6 +78,11 @@ namespace MainRogue
             mapLayers.Add(layer14.ToCharArray());
             mapLayers.Add(layer15.ToCharArray());
             mapLayers.Add(layer16.ToCharArray());
+            mapLayers.Add(layer17.ToCharArray());
+            mapLayers.Add(layer18.ToCharArray());
+            mapLayers.Add(layer19.ToCharArray());
+            mapLayers.Add(layer20.ToCharArray());
+
         }
         public void ConsoleData()
         {
@@ -311,7 +321,7 @@ namespace MainRogue
         /// <param name="mapLayers"></param>
         public void Draw(List<char[]>mapLayers)
         {
-            for (int y = 0; y < 17; y++)
+            for (int y = 0; y < 21; y++)
                 for (int x = 0; x < 79; x++)
                 {
 
@@ -332,6 +342,7 @@ namespace MainRogue
                     else if (layer[x] == '?') { Console.ForegroundColor = ConsoleColor.Magenta; }
                     else if (layer[x] == '[' || layer[x] == ']') { Console.ForegroundColor = ConsoleColor.Green; }
                     else if (layer[x] == '{' || layer[x] == '}') { Console.ForegroundColor = ConsoleColor.Blue; }
+                    else if (layer[x] == '<' || layer[x] == '3' && y == 0) { Console.ForegroundColor = ConsoleColor.DarkRed; }
                     else if (layer[x] == '>') { Console.ForegroundColor = ConsoleColor.Red; }
                     else if (layer[x] == '+') { Console.ForegroundColor = ConsoleColor.DarkYellow; }
                     ///else if (message && x > 43 && x < 77 && y > 4 && y < 16) { Console.ForegroundColor = ConsoleColor.DarkGray; }
@@ -351,7 +362,7 @@ namespace MainRogue
                         Console.Write(layer[x]);
                     }
                 }
-            Console.SetCursorPosition(0, 18);
+            Console.SetCursorPosition(0, 21);
         }
     }
     public class PlayerConsole
@@ -583,6 +594,39 @@ namespace MainRogue
             ///else { clearConsole(mapLayers);}
         }
     }
+    public class Ghost
+    {
+        public int x = 19;
+        public int y = 5;
+        public char ghostChar = 'O';
+
+        public void UpdateGhost(int playerx, int playery, List<char[]> mapLayers)
+        {
+            char[] layer = mapLayers[y];
+///            if (y<playery )
+///            {
+            if (y > playery)
+            {
+                if (playery - y > playerx - x && mapLayers[y - 1][x] != '#' && x!=playerx && layer[x-1]!= '@') { y -= 1; layer[x] = ' '; layer = mapLayers[y]; layer[x] = ghostChar; }
+                else if (x < playerx && layer[x+1]!= '#'){ x += 1; layer[x] = ghostChar; layer[x - 1] = ' '; }
+                else if (x > playerx && layer[x - 1] != '#') { x -= 1; layer[x] = ghostChar; layer[x + 1] = ' '; }
+                else if (mapLayers[y - 1][x] != '#') { y -= 1; layer[x] = ' '; layer = mapLayers[y]; layer[x] = ghostChar; }
+            }
+            else if (y < playery)
+            {
+                if (y - playery > x - playerx && mapLayers[y + 1][x] != '#' && x != playerx && layer[x + 1] != '@') { y += 1; layer[x] = ' '; layer = mapLayers[y]; layer[x] = ghostChar; }
+                else if (x > playerx && layer[x - 1] != '#') { x -= 1; layer[x] = ghostChar; layer[x + 1] = ' '; }
+                else if (x < playerx && layer[x + 1] != '#') { x += 1; layer[x] = ghostChar; layer[x - 1] = ' '; }
+                else if (mapLayers[y + 1][x] != '#') { y += 1; layer[x] = ' '; layer = mapLayers[y]; layer[x] = ghostChar; }
+            }
+            else if (y == playery)
+            {
+                if (x > playerx && layer[x - 1] != '#') { x -= 1; layer[x] = ghostChar; layer[x + 1] = ' '; }
+                else if (x < playerx && layer[x + 1] != '#') { x += 1; layer[x] = ghostChar; layer[x - 1] = ' '; }
+            }
+///            }
+        }
+    }
 
     class Program
     {
@@ -592,6 +636,7 @@ namespace MainRogue
             var events = new Events();
             var scene = new Scenes();
             var console = new PlayerConsole();
+            var newGhost = new Ghost();
             
             data.name = scene.Intro();
             data.MapData();
@@ -605,13 +650,17 @@ namespace MainRogue
             Console.Clear();
 
             Console.CursorVisible = false;
+            
             Console.SetWindowPosition(wx, wy);
             wy = wy + 17;
             while (events.run)
             {
+                Console.CursorVisible = false;
+                ///Console.BackgroundColor = ConsoleColor.Magenta;
                 events.Draw(data.mapLayers);
                 /// Checking PLayer Input
                 events.CheckEvents(data.mapLayers, data.Messages, data.messagesList);
+                newGhost.UpdateGhost(events.playerx, events.playery, data.mapLayers);
                 console.CheckConsole(events.message, events.info, events.inventory, events.notes, data.mapLayers, data.messagesList, data.Messages, data.Info, events.keys);
                 ///System.Threading.Thread.Sleep(0);
             }
